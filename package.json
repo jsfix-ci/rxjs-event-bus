@@ -1,6 +1,6 @@
 {
   "name": "@21epub/rxjs-event-bus",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "author": "21epub",
   "license": "MIT",
@@ -49,8 +49,7 @@
       "pre-commit": "lint-staged"
     }
   },
-  "peerDependencies": {
-  },
+  "peerDependencies": {},
   "dependencies": {
     "rxjs": "6.6.3"
   },
