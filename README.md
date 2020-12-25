@@ -6,13 +6,14 @@
 
 ## Intro
 
-This is a component for react.
+This is a module for event management.
 
 ## Feature
 
 - [x] Easy-to-use
 - [x] Typescript Support
-- [x] Storybook UI component
+- [x] Rxjs
+- [ ] Hooks support
 
 ## Install
 
@@ -22,20 +23,24 @@ npm install --save @21epub/rxjs-event-bus
 
 ## Usage
 
-```tsx
-import React, { Component } from 'react'
+```ts
+import RxBus from '@21epub/rxjs-event-bus'
 
-import MyComponent from '@21epub/rxjs-event-bus'
-import '@21epub/rxjs-event-bus/dist/index.css'
+// create instance
+const rxBus = new RxBus()
 
-class Example extends Component {
-  render() {
-    return <MyComponent />
-  }
-}
+// register events
+rxBus.register<string>('event1')
+
+// or register batch of events
+rxBus.register<string>(['event1', 'event2'])
+
+// subscribe to a event just like using rxjs subject
+rxBus.subject('event1').subscribe((result) => console.log(result))
+
+// tigger event
+rxBus.subject('event1').next('ok')
 ```
-
-For Details: See Example
 
 ## Developing and running on localhost
 
@@ -43,7 +48,6 @@ First install dependencies and then install peerDeps for storybook dev:
 
 ```sh
 npm install
-npm run install-peers
 ```
 
 To run Example in hot module reloading mode:
