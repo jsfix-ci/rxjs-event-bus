@@ -15,8 +15,18 @@ describe('Bus Basic function', () => {
 
   test('register event ok', () => {
     // It does not force to register before usage ( Recommended for specify interface of the event data )
+    let eventCount = 0
     rxBus.register<string>('event1')
     expect(rxBus.subject('event1').next).toBeDefined() // to check if a event is exist in a range
+    rxBus.subject('event1').subscribe(() => {
+      eventCount++
+    })
+    rxBus.subject('event1').next()
+    expect(eventCount).toBe(1)
+  })
+
+  test('should get events and getAll ok', () => {
+    expect(rxBus.get('event1')).toBe(rxBus.subject('event1'))
   })
 
   test('should register mutiple events meanwhile ', () => {
@@ -56,29 +66,36 @@ describe('Bus Basic function', () => {
 
   test('should disable a event ok , to make it unReachable and then enable it again ', () => {
     let eventCount = 0
-    rxBus.subject('event2').subscribe((result) => {
+    rxBus.subject('event3').subscribe((result) => {
       // subscribe before the event
       expect(result).toBe('ok')
       eventCount++
     })
-    rxBus.disable('event2')
-    rxBus.subject('event2').next('ok')
+    rxBus.disable('event3')
+    // ensure even the event is disabled but the subscribe function should worked
+    expect(rxBus.subject('event3').subscribe).toBeDefined()
+    rxBus.subject('event3').subscribe((result) => {
+      // subscribe before the event
+      expect(result).toBe('ok')
+      eventCount++
+    })
+    rxBus.subject('event3').next('ok')
     expect(eventCount).toBe(0)
-    rxBus.enable('event2')
-    rxBus.subject('event2').next('ok')
-    expect(eventCount).toBe(1)
+    rxBus.enable('event3')
+    rxBus.subject('event3').next('ok')
+    expect(eventCount).toBe(2)
   })
 
   test('should can remove all subscription to a event ', () => {
     let eventCount = 0
-    rxBus.subject('event2').subscribe((results) => {
+    rxBus.subject('event4').subscribe((results) => {
       eventCount++
       expect(results).toBe('ok')
     })
-    rxBus.subject('event2').next('ok')
+    rxBus.subject('event4').next('ok')
     expect(eventCount).toBe(1)
-    rxBus.removeSubscriptions('event2')
-    rxBus.subject('event2').next('ok1')
+    rxBus.removeSubscriptions('event4')
+    rxBus.subject('event4').next('ok1')
     expect(eventCount).toBe(1)
   })
 
@@ -93,27 +110,31 @@ describe('Bus Basic function', () => {
     expect(eventCount).toBe(1)
     rxBus.remove('event5')
     expect(() => rxBus.subject('event5')).toThrowError()
+    // and you can register it again
+    rxBus.register<string>('event5')
   })
 
   test('should trigger a AsyncEvent that can only be fired once and catched once ', () => {
     let eventCount = 0
-    rxBus.asyncSubject('event3').next('ok')
-    rxBus.asyncSubject('event3').complete()
-    rxBus.asyncSubject('event3').subscribe((results) => {
+    rxBus.register<string>('eventAsync', 'AsyncSubject')
+    rxBus.asyncSubject('eventAsync').next('ok')
+    rxBus.asyncSubject('eventAsync').complete()
+    rxBus.asyncSubject('eventAsync').subscribe((results) => {
       eventCount++
       expect(results).toBe('ok')
     })
     expect(eventCount).toBe(1)
-    rxBus.asyncSubject('event3').next('ok')
-    rxBus.asyncSubject('event3').complete()
+    rxBus.asyncSubject('eventAsync').next('ok')
+    rxBus.asyncSubject('eventAsync').complete()
     expect(eventCount).toBe(1)
   })
 
   test('should register a behaviourEvent that can memory the value of latest', () => {
     let eventCount = 0
-    rxBus.behaviorSubject('event3').next('ok1')
-    rxBus.behaviorSubject('event3').next('ok2')
-    rxBus.behaviorSubject('event3').subscribe((results) => {
+    rxBus.register<string>('eventBehavior', 'BehaviorSubject')
+    rxBus.behaviorSubject('eventBehavior').next('ok1')
+    rxBus.behaviorSubject('eventBehavior').next('ok2')
+    rxBus.behaviorSubject('eventBehavior').subscribe((results) => {
       eventCount++
       expect(results).toBe('ok2')
     })

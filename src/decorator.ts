@@ -1,31 +1,4 @@
 /* eslint prefer-rest-params: 0 */
-import { Subject } from 'rxjs'
-
-const fakeSubject = ({
-  next: () => {},
-  complete: () => {},
-  observers: []
-} as unknown) as Subject<any>
-
-export const enabled = function (
-  target: any,
-  propertyKey: string,
-  descriptor: PropertyDescriptor
-) {
-  const callback = descriptor.value
-
-  return {
-    ...descriptor,
-    value(ev: string) {
-      const _disables = (this as any)?._disabledSubjects ?? []
-      const args = arguments
-      if (_disables.includes(ev)) {
-        console.info('Event:', ev, ' is disabled')
-        return fakeSubject
-      } else return callback.apply(this, args)
-    }
-  }
-}
 
 export const exist = function (
   target: any,

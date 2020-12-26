@@ -1,6 +1,7 @@
 /* eslint no-fallthrough: 0 */
 import { BehaviorSubject, Subject, ReplaySubject, AsyncSubject } from 'rxjs'
-import { enabled, exist, noExist } from './decorator'
+import { exist, noExist } from './decorator'
+import { backupOrigin, camelize, restoreOrigin } from './util'
 
 type RxSubject<T> =
   | Subject<T>
@@ -14,13 +15,21 @@ type RxSubjectType =
   | 'ReplaySubject'
   | 'AsyncSubject'
 
-const SUPPORT_SUBJECTS: RxSubjectType[] = [
-  'Subject',
-  'BehaviorSubject',
-  'AsyncSubject',
-  'ReplaySubject'
-]
-
+/**
+ *  RxBus
+ *  A event management using Rxjs
+ *  All Rxjs functions and Operators for Subject are fully supported
+ *  @example
+ *  ```
+ *    const rxBus = new RxBus();  // initialize
+ *    rxBus.register('event1')  // register a default subject event
+ *    rxBus.subject('event1').next()
+ *    rxBus.subject('event1').subscribe( () => ...)
+ *    rxBus.subject('event1').next('ok')  //  pass on data to event
+ *
+ *    rxBus.register('event2', 'BehaviorSubject', 1)  // support four types of subject by Rxjs
+ *  ```
+ */
 class RxBus {
   private _subject: Record<string, Subject<any>> = {}
   private _behaviorSubject: Record<string, BehaviorSubject<any>> = {}
@@ -58,6 +67,14 @@ class RxBus {
     return subject
   }
 
+  /**
+   * Register a event subject
+   * Can not register same event twice
+   * A event subject should be registered before usage
+   * @param ev
+   * @param type
+   * @param initialValue
+   */
   @noExist
   register<T>(
     ev: string | string[],
@@ -69,12 +86,16 @@ class RxBus {
       switch (type) {
         case 'Subject':
           this.createSubject<T>(ev)
+          break
         case 'AsyncSubject':
           this.createAsyncSubject<T>(ev)
+          break
         case 'BehaviorSubject':
           this.createBehaviorSubject<T | undefined>(ev, initialValue)
+          break
         case 'ReplaySubject':
           this.createReplaySubject<T>(ev)
+          break
       }
     } else if (ev?.length) {
       ev.map((s) => this.register(s, type, initialValue))
@@ -82,39 +103,41 @@ class RxBus {
   }
 
   @exist
-  @enabled
   subject(ev: string) {
-    return this._subject[ev] ?? this.register<any>(ev)
+    return this._subject[ev]
   }
 
   @exist
-  @enabled
   behaviorSubject(ev: string) {
     return this._behaviorSubject[ev]
   }
 
   @exist
-  @enabled
   replaySubject(ev: string) {
     return this._replaySubject[ev]
   }
 
   @exist
-  @enabled
   asyncSubject(ev: string) {
     return this._asyncSubject[ev]
   }
 
   disable(ev: string) {
-    if (!this._disabledSubjects.includes(ev))
+    const subject = this.get(ev)
+    if (!this._disabledSubjects.includes(ev) && subject) {
       this._disabledSubjects = [...this._disabledSubjects, ev]
+      backupOrigin(subject)
+    }
   }
 
   enable(ev: string) {
-    if (this._disabledSubjects.includes(ev))
+    const subject = this.get(ev)
+    if (this._disabledSubjects.includes(ev) && subject) {
       this._disabledSubjects = [
         ...this._disabledSubjects.filter((v) => v !== ev)
       ]
+      restoreOrigin(subject)
+    }
   }
 
   remove(ev: string, type?: RxSubjectType) {
@@ -127,33 +150,15 @@ class RxBus {
   }
 
   removeSubscriptions(ev: string, type?: RxSubjectType) {
-    const subjects = this.getAll(ev, type)
-    subjects.forEach((subject) => {
-      subject.observers.forEach((observer) => (observer as any).unsubscribe())
-    })
+    const subject = this.get(ev, type)
+    subject.observers.forEach((observer) => (observer as any).unsubscribe())
   }
 
-  get(ev: string, type?: RxSubjectType) {
+  get(ev: string, type?: RxSubjectType): RxSubject<any> {
     if (type) {
-      switch (type) {
-        case 'Subject':
-          return this._subject[ev]
-        case 'AsyncSubject':
-          return this._asyncSubject[ev]
-        case 'BehaviorSubject':
-          return this._behaviorSubject[ev]
-        case 'ReplaySubject':
-          return this._replaySubject[ev]
-      }
+      const list = (this as any)[`_${camelize(type)}`]
+      return list[ev]
     } else return this._getAnySubject(ev)
-  }
-
-  private getAll(ev: string, type?: RxSubjectType): Array<RxSubject<any>> {
-    const results: Array<RxSubject<any>> = []
-    SUPPORT_SUBJECTS.forEach((s) => {
-      ;(!type || type === s) && this.get(ev, s) && results.push(this.get(ev, s))
-    })
-    return results
   }
 
   private _getAnySubject(ev: string): RxSubject<any> {
