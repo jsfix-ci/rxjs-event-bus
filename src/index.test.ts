@@ -89,8 +89,8 @@ describe('Bus Basic function', () => {
   test('should can remove all subscription to a event ', () => {
     let eventCount = 0
     rxBus.subject('event4').subscribe((results) => {
-      eventCount++
       expect(results).toBe('ok')
+      eventCount++
     })
     rxBus.subject('event4').next('ok')
     expect(eventCount).toBe(1)
@@ -103,8 +103,8 @@ describe('Bus Basic function', () => {
     rxBus.register<string>('event5')
     let eventCount = 0
     rxBus.subject('event5').subscribe((results) => {
-      eventCount++
       expect(results).toBe('ok')
+      eventCount++
     })
     rxBus.subject('event5').next('ok')
     expect(eventCount).toBe(1)
@@ -120,8 +120,8 @@ describe('Bus Basic function', () => {
     rxBus.asyncSubject('eventAsync').next('ok')
     rxBus.asyncSubject('eventAsync').complete()
     rxBus.asyncSubject('eventAsync').subscribe((results) => {
-      eventCount++
       expect(results).toBe('ok')
+      eventCount++
     })
     expect(eventCount).toBe(1)
     rxBus.asyncSubject('eventAsync').next('ok')
@@ -132,40 +132,60 @@ describe('Bus Basic function', () => {
   test('should register a behaviourEvent that can memory the value of latest', () => {
     let eventCount = 0
     rxBus.register<string>('eventBehavior', 'BehaviorSubject')
+    const sub = rxBus.behaviorSubject('eventBehavior').subscribe((results) => {
+      // behavior subject will take place as soon as created
+      expect(results).toBeUndefined()
+      eventCount++
+    })
+    sub.unsubscribe()
     rxBus.behaviorSubject('eventBehavior').next('ok1')
     rxBus.behaviorSubject('eventBehavior').next('ok2')
     rxBus.behaviorSubject('eventBehavior').subscribe((results) => {
-      eventCount++
       expect(results).toBe('ok2')
+      eventCount++
     })
-    expect(eventCount).toBe(1)
+    expect(eventCount).toBe(2)
   })
 
   test('should register a replayEvent that can replay all the event happened  ', () => {
     rxBus.register<string>('eventForReplay', 'ReplaySubject')
-
+    rxBus.register<string>('eventForReplay1', 'ReplaySubject', undefined, 1)
+    rxBus.register<string>('eventForReplay2', 'ReplaySubject', 'start') // replaysubject with default value
     let eventCount = 0
     const dataFC = function* data() {
       yield 'ok1'
       yield 'ok2'
+      yield 'ok4'
     }
 
     const data = dataFC()
     rxBus.replaySubject('eventForReplay').next('ok1')
     rxBus.replaySubject('eventForReplay').next('ok2')
     rxBus.replaySubject('eventForReplay').subscribe((results) => {
-      eventCount++
       expect(results).toBe(data.next().value)
+      eventCount++
     })
     expect(eventCount).toBe(2)
+    rxBus.replaySubject('eventForReplay1').next('ok3')
+    rxBus.replaySubject('eventForReplay1').next('ok4')
+    rxBus.replaySubject('eventForReplay1').subscribe((results) => {
+      expect(results).toBe(data.next().value)
+      eventCount++
+    })
+    expect(eventCount).toBe(3)
+    rxBus.replaySubject('eventForReplay2').subscribe((results) => {
+      expect(results).toBe('start')
+      eventCount++
+    })
+    expect(eventCount).toBe(4)
   })
 
   test('should remove a event and make it not works ', () => {
     rxBus.register<string>('eventForRemove')
     let eventCount = 0
     rxBus.subject('eventForRemove').subscribe((results) => {
-      eventCount++
       expect(results).toBe('ok')
+      eventCount++
     })
     const subject = rxBus.subject('eventForRemove')
     subject.next('ok')

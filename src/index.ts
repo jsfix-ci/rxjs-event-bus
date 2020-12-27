@@ -61,8 +61,15 @@ class RxBus {
     return subject
   }
 
-  private createReplaySubject<T>(ev: string): ReplaySubject<T> {
-    const subject = new ReplaySubject<T>()
+  private createReplaySubject<T>(
+    ev: string,
+    initialValue?: T,
+    bufferSize?: number
+  ): ReplaySubject<T> {
+    const subject = new ReplaySubject<T>(bufferSize)
+    if (initialValue) {
+      subject.next(initialValue)
+    }
     if (!this._replaySubject[ev]) this._replaySubject[ev] = subject
     return subject
   }
@@ -73,13 +80,15 @@ class RxBus {
    * A event subject should be registered before usage
    * @param ev
    * @param type
-   * @param initialValue
+   * @param initialValue  only for behaviorSubject or replaySubject
+   * @param bufferSize only for replaySubject
    */
   @noExist
   register<T>(
     ev: string | string[],
     type: RxSubjectType = 'Subject',
-    initialValue?: T
+    initialValue?: T,
+    bufferSize?: number
   ): void | RxSubject<T> {
     if (typeof ev === 'string') {
       // do not allowed to register a same event name to different pool
@@ -94,7 +103,7 @@ class RxBus {
           this.createBehaviorSubject<T | undefined>(ev, initialValue)
           break
         case 'ReplaySubject':
-          this.createReplaySubject<T>(ev)
+          this.createReplaySubject<T>(ev, initialValue, bufferSize)
           break
       }
     } else if (ev?.length) {
