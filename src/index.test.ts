@@ -17,6 +17,9 @@ describe('Bus Basic function', () => {
     // It does not force to register before usage ( Recommended for specify interface of the event data )
     let eventCount = 0
     rxBus.register<string>('event1')
+    expect(rxBus.get('event1', 'Subject').next).toBeDefined()
+    expect(rxBus.get('event1', 'AsyncSubject')).toBeUndefined()
+    expect(rxBus.get('event2')).toBeUndefined()
     expect(rxBus.subject('event1').next).toBeDefined() // to check if a event is exist in a range
     rxBus.subject('event1').subscribe(() => {
       eventCount++
@@ -117,12 +120,13 @@ describe('Bus Basic function', () => {
   test('should trigger a AsyncEvent that can only be fired once and catched once ', () => {
     let eventCount = 0
     rxBus.register<string>('eventAsync', 'AsyncSubject')
-    rxBus.asyncSubject('eventAsync').next('ok')
-    rxBus.asyncSubject('eventAsync').complete()
     rxBus.asyncSubject('eventAsync').subscribe((results) => {
       expect(results).toBe('ok')
       eventCount++
     })
+    rxBus.asyncSubject('eventAsync').next('nothing')
+    rxBus.asyncSubject('eventAsync').next('ok')
+    rxBus.asyncSubject('eventAsync').complete()
     expect(eventCount).toBe(1)
     rxBus.asyncSubject('eventAsync').next('ok')
     rxBus.asyncSubject('eventAsync').complete()
@@ -196,6 +200,13 @@ describe('Bus Basic function', () => {
   })
 
   test('should destroy all when the bus object are being destroyed ', () => {
+    let eventCount = 0
+    rxBus.register<string>('lastEvent')
+    rxBus.subject('lastEvent').subscribe(() => {
+      eventCount++
+    })
     rxBus.destroy()
+    rxBus.subject('lastEvent').next('ok')
+    expect(eventCount).toBe(0)
   })
 })

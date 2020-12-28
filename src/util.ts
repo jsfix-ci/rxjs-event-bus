@@ -27,5 +27,8 @@ export const backupOrigin = (subject: RxSubject<any>) => {
 }
 
 export const restoreOrigin = (subject: RxSubject<any>) => {
-  if ((subject as any).originNext) subject.next = (subject as any).originNext
+  if ((subject as any).originNext) {
+    subject.next = (subject as any).originNext
+    delete (subject as any).originNext
+  }
 }

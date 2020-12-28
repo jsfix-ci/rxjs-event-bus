@@ -78,6 +78,7 @@ class RxBus {
    * Register a event subject
    * Can not register same event twice
    * A event subject should be registered before usage
+   * The subject Object is a rxjs Subject ,[Reference here](https://www.learnrxjs.io/learn-rxjs/subjects)
    * @param ev
    * @param type
    * @param initialValue  only for behaviorSubject or replaySubject
@@ -131,6 +132,12 @@ class RxBus {
     return this._asyncSubject[ev]
   }
 
+  /**
+   * Disable a event temporarily
+   * Sometime you want a event to be disabled for some task or during sometime and to enable it again after finish
+   * * caution : You should always use rxBus.subject(xxxx).next to execute event trigger or it will not working
+   * @param ev
+   */
   disable(ev: string) {
     const subject = this.get(ev)
     if (!this._disabledSubjects.includes(ev) && subject) {
@@ -180,16 +187,17 @@ class RxBus {
   }
 
   destroy() {
-    Object.keys(this._asyncSubject).forEach((ev) =>
-      this.removeSubscriptions(ev)
-    )
-    Object.keys(this._behaviorSubject).forEach((ev) =>
-      this.removeSubscriptions(ev)
-    )
-    Object.keys(this._subject).forEach((ev) => this.removeSubscriptions(ev))
-    Object.keys(this._replaySubject).forEach((ev) =>
-      this.removeSubscriptions(ev)
-    )
+    ;[
+      this._asyncSubject,
+      this._behaviorSubject,
+      this._subject,
+      this._replaySubject
+    ].forEach((rxSubject) => {
+      Object.keys(rxSubject).forEach((ev) => {
+        this.removeSubscriptions(ev)
+        rxSubject[ev].complete()
+      })
+    })
   }
 }
 
