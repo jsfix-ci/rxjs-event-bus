@@ -51,6 +51,13 @@ describe('Bus Basic function', () => {
     )
   })
 
+  test('should not use a different type event ', () => {
+    expect(rxBus.subject('event2').next).toBeDefined()
+    expect(() => rxBus.behaviorSubject('event2')).toThrow(
+      'Event: event2 is registered in other Type , Please Check and try other Type !!! '
+    )
+  })
+
   test('should tigger a event and subscribe to the event ', () => {
     let eventCount = 0
     const subscription = rxBus.subject('event2').subscribe((result) => {
@@ -64,6 +71,12 @@ describe('Bus Basic function', () => {
       ((allSubs as unknown) as Subscription[]).includes(subscription)
     ).toBeTruthy() // allSubs includes the subscription
     rxBus.subject('event2').next('ok')
+    expect(eventCount).toBe(1)
+    rxBus.subject('event2').subscribe((result) => {
+      // subscribe before the event
+      expect(result).toBe('ok')
+      eventCount++
+    })
     expect(eventCount).toBe(1)
   })
 
@@ -131,6 +144,14 @@ describe('Bus Basic function', () => {
     rxBus.asyncSubject('eventAsync').next('ok')
     rxBus.asyncSubject('eventAsync').complete()
     expect(eventCount).toBe(1)
+    rxBus.asyncSubject('eventAsync').subscribe((results) => {
+      expect(results).toBe('ok')
+      eventCount++
+    })
+    expect(eventCount).toBe(2)
+    rxBus.asyncSubject('eventAsync').next('ok')
+    rxBus.asyncSubject('eventAsync').complete()
+    expect(eventCount).toBe(2)
   })
 
   test('should register a behaviourEvent that can memory the value of latest', () => {
@@ -156,6 +177,12 @@ describe('Bus Basic function', () => {
     rxBus.register<string>('eventForReplay1', 'ReplaySubject', undefined, 1)
     rxBus.register<string>('eventForReplay2', 'ReplaySubject', 'start') // replaysubject with default value
     let eventCount = 0
+    const tmpSub = rxBus
+      .replaySubject('eventForReplay')
+      .subscribe((results) => {
+        eventCount++
+        expect(results).toBe('nothing')
+      })
     const dataFC = function* data() {
       yield 'ok1'
       yield 'ok2'
@@ -163,6 +190,7 @@ describe('Bus Basic function', () => {
     }
 
     const data = dataFC()
+    tmpSub.unsubscribe()
     rxBus.replaySubject('eventForReplay').next('ok1')
     rxBus.replaySubject('eventForReplay').next('ok2')
     rxBus.replaySubject('eventForReplay').subscribe((results) => {

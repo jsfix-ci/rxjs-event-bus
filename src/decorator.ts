@@ -1,5 +1,14 @@
 /* eslint prefer-rest-params: 0 */
 
+const testEvType = ($this: any, ev: string): boolean => {
+  return (
+    $this._subject[ev] ||
+    $this._behaviorSubject[ev] ||
+    $this._asyncSubject[ev] ||
+    $this._replaySubject[ev]
+  )
+}
+
 export const exist = function (
   target: any,
   propertyKey: string,
@@ -14,7 +23,9 @@ export const exist = function (
       const args = arguments
       const [ev] = args as any
       if (!list[ev]) {
-        const msg = `Event: ${ev} is not registered! `
+        const msg = testEvType(this, ev)
+          ? `Event: ${ev} is registered in other Type , Please Check and try other Type !!! `
+          : `Event: ${ev} is not registered! `
         throw new Error(msg)
       } else return callback.apply(this, args)
     }

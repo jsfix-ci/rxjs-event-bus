@@ -30,7 +30,7 @@ type RxSubjectType =
  *    rxBus.register('event2', 'BehaviorSubject', 1)  // support four types of subject by Rxjs
  *  ```
  */
-class RxBus {
+class RxBus<P extends string> {
   private _subject: Record<string, Subject<any>> = {}
   private _behaviorSubject: Record<string, BehaviorSubject<any>> = {}
   private _replaySubject: Record<string, ReplaySubject<any>> = {}
@@ -113,22 +113,22 @@ class RxBus {
   }
 
   @exist
-  subject(ev: string) {
+  subject(ev: P) {
     return this._subject[ev]
   }
 
   @exist
-  behaviorSubject(ev: string) {
+  behaviorSubject(ev: P) {
     return this._behaviorSubject[ev]
   }
 
   @exist
-  replaySubject(ev: string) {
+  replaySubject(ev: P) {
     return this._replaySubject[ev]
   }
 
   @exist
-  asyncSubject(ev: string) {
+  asyncSubject(ev: P) {
     return this._asyncSubject[ev]
   }
 
@@ -138,7 +138,7 @@ class RxBus {
    * * caution : You should always use rxBus.subject(xxxx).next to execute event trigger or it will not working
    * @param ev
    */
-  disable(ev: string) {
+  disable(ev: P) {
     const subject = this.get(ev)
     if (!this._disabledSubjects.includes(ev) && subject) {
       this._disabledSubjects = [...this._disabledSubjects, ev]
@@ -146,7 +146,7 @@ class RxBus {
     }
   }
 
-  enable(ev: string) {
+  enable(ev: P) {
     const subject = this.get(ev)
     if (this._disabledSubjects.includes(ev) && subject) {
       this._disabledSubjects = [
@@ -156,7 +156,7 @@ class RxBus {
     }
   }
 
-  remove(ev: string, type?: RxSubjectType) {
+  remove(ev: P, type?: RxSubjectType) {
     // no type arg , will remove all the ev in different pool
     this.removeSubscriptions(ev, type)
     delete this._asyncSubject[ev]
@@ -165,19 +165,19 @@ class RxBus {
     delete this._subject[ev]
   }
 
-  removeSubscriptions(ev: string, type?: RxSubjectType) {
+  removeSubscriptions(ev: P, type?: RxSubjectType) {
     const subject = this.get(ev, type)
     subject.observers.forEach((observer) => (observer as any).unsubscribe())
   }
 
-  get(ev: string, type?: RxSubjectType): RxSubject<any> {
+  get(ev: P, type?: RxSubjectType): RxSubject<any> {
     if (type) {
       const list = (this as any)[`_${camelize(type)}`]
       return list[ev]
     } else return this._getAnySubject(ev)
   }
 
-  private _getAnySubject(ev: string): RxSubject<any> {
+  private _getAnySubject(ev: P): RxSubject<any> {
     return (
       this._subject[ev] ??
       this._asyncSubject[ev] ??
@@ -194,7 +194,7 @@ class RxBus {
       this._replaySubject
     ].forEach((rxSubject) => {
       Object.keys(rxSubject).forEach((ev) => {
-        this.removeSubscriptions(ev)
+        this.removeSubscriptions(ev as P)
         rxSubject[ev].complete()
       })
     })
