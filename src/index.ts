@@ -1,6 +1,7 @@
 /* eslint no-fallthrough: 0 */
 import { BehaviorSubject, Subject, ReplaySubject, AsyncSubject } from 'rxjs'
 import { exist, noExist } from './decorator'
+import SyncEvent, { syncBus } from './sync'
 import { backupOrigin, camelize, restoreOrigin } from './util'
 
 type RxSubject<T> =
@@ -8,12 +9,14 @@ type RxSubject<T> =
   | BehaviorSubject<T | undefined>
   | ReplaySubject<T>
   | AsyncSubject<T>
+  | SyncEvent<T>
 
 type RxSubjectType =
   | 'Subject'
   | 'BehaviorSubject'
   | 'ReplaySubject'
   | 'AsyncSubject'
+  | 'SyncSubject'
 
 /**
  *  RxBus
@@ -35,6 +38,7 @@ class RxBus<P extends string> {
   private _behaviorSubject: Record<string, BehaviorSubject<any>> = {}
   private _replaySubject: Record<string, ReplaySubject<any>> = {}
   private _asyncSubject: Record<string, AsyncSubject<any>> = {}
+  private _syncSubject: Record<string, SyncEvent<any>> = {}
   private _disabledSubjects: string[] = []
   constructor() {
     return this
@@ -74,6 +78,14 @@ class RxBus<P extends string> {
     return subject
   }
 
+  private createSyncSubject<T>(ev: string) {
+    if (!this._syncSubject[ev]) {
+      const subject = new SyncEvent<T>(ev)
+      this._syncSubject[ev] = subject
+    }
+    return this._syncSubject[ev]
+  }
+
   /**
    * Register a event subject
    * Can not register same event twice
@@ -106,6 +118,8 @@ class RxBus<P extends string> {
         case 'ReplaySubject':
           this.createReplaySubject<T>(ev, initialValue, bufferSize)
           break
+        case 'SyncSubject':
+          this.createSyncSubject<T>(ev)
       }
     } else if (ev?.length) {
       ev.map((s) => this.register(s, type, initialValue))
@@ -130,6 +144,11 @@ class RxBus<P extends string> {
   @exist
   asyncSubject(ev: P) {
     return this._asyncSubject[ev]
+  }
+
+  @exist
+  syncSubject(ev: P) {
+    return this._syncSubject[ev]
   }
 
   /**
@@ -163,11 +182,21 @@ class RxBus<P extends string> {
     delete this._behaviorSubject[ev]
     delete this._replaySubject[ev]
     delete this._subject[ev]
+    delete this._syncSubject[ev]
   }
 
   removeSubscriptions(ev: P, type?: RxSubjectType) {
     const subject = this.get(ev, type)
-    subject.observers.forEach((observer) => (observer as any).unsubscribe())
+    if ((subject as Subject<any>).observers) {
+      ;(subject as Subject<any>).observers.forEach((observer) =>
+        (observer as any).unsubscribe()
+      )
+    }
+    if ((subject as SyncEvent<any>).listeners) {
+      ;(subject as SyncEvent<any>).listeners.forEach((fn) =>
+        syncBus.removeListener((subject as SyncEvent<any>).ev, fn)
+      )
+    }
   }
 
   get(ev: P, type?: RxSubjectType): RxSubject<any> {
@@ -182,7 +211,8 @@ class RxBus<P extends string> {
       this._subject[ev] ??
       this._asyncSubject[ev] ??
       this._behaviorSubject[ev] ??
-      this._replaySubject[ev]
+      this._replaySubject[ev] ??
+      this._syncSubject[ev]
     )
   }
 
@@ -191,11 +221,13 @@ class RxBus<P extends string> {
       this._asyncSubject,
       this._behaviorSubject,
       this._subject,
-      this._replaySubject
+      this._replaySubject,
+      this._syncSubject
     ].forEach((rxSubject) => {
       Object.keys(rxSubject).forEach((ev) => {
         this.removeSubscriptions(ev as P)
-        rxSubject[ev].complete()
+        if ((rxSubject[ev] as Subject<any>).complete)
+          (rxSubject[ev] as Subject<any>).complete()
       })
     })
   }

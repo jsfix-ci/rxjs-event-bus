@@ -40,6 +40,11 @@ rxBus.subject('event1').subscribe((result) => console.log(result))
 
 // tigger event
 rxBus.subject('event1').next('ok')
+
+// support Sync Event
+rxBus.register('syncEvent', 'SyncSubject')
+rxBus.syncSubject('syncEvent').subscribe((result) => console.log(result)) // something
+rxBus.syncSubject('syncEvent').next('something')
 ```
 
 ## Developing and running on localhost

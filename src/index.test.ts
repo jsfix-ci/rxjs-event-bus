@@ -237,4 +237,32 @@ describe('Bus Basic function', () => {
     rxBus.subject('lastEvent').next('ok')
     expect(eventCount).toBe(0)
   })
+
+  test('should pass when using syncObject bus ', () => {
+    rxBus.register<number>('syncDemo', 'SyncSubject')
+    let count = 0
+    let unsubscribe = rxBus.syncSubject('syncDemo').subscribe(() => {
+      count++
+    })
+    rxBus.syncSubject('syncDemo').next()
+    expect(count).toBe(1)
+    rxBus.syncSubject('syncDemo').next()
+    expect(count).toBe(2)
+    // canbe disabledw
+    rxBus.disable('syncDemo')
+    rxBus.syncSubject('syncDemo').next()
+    expect(count).toBe(2)
+    rxBus.enable('syncDemo')
+    unsubscribe()
+    rxBus.syncSubject('syncDemo').next()
+    expect(count).toBe(2)
+    unsubscribe = rxBus.syncSubject('syncDemo').subscribe((n: number) => {
+      count += n
+    })
+    rxBus.syncSubject('syncDemo').next(3)
+    expect(count).toBe(5)
+    rxBus.removeSubscriptions('syncDemo')
+    rxBus.syncSubject('syncDemo').next()
+    expect(count).toBe(5)
+  })
 })

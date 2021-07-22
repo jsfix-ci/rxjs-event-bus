@@ -5,7 +5,8 @@ const testEvType = ($this: any, ev: string): boolean => {
     $this._subject[ev] ||
     $this._behaviorSubject[ev] ||
     $this._asyncSubject[ev] ||
-    $this._replaySubject[ev]
+    $this._replaySubject[ev] ||
+    $this._syncSubject[ev]
   )
 }
 
@@ -50,7 +51,8 @@ export const noExist = function (
           $this._subject[ev] ||
           $this._behaviorSubject[ev] ||
           $this._asyncSubject[ev] ||
-          $this._replaySubject[ev]
+          $this._replaySubject[ev] ||
+          $this._syncSubject[ev]
         if (exist) {
           const msg = `Event: ${ev} has been already registered! `
           throw new Error(msg)
