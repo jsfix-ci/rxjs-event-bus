@@ -1,8 +1,8 @@
 import EventEmitter from 'eventemitter3'
 
-export const syncBus = new EventEmitter() // Use to construct a sync bus for simple usage;
-
 type Fn = (...args: any[]) => void
+
+export const syncBus = new EventEmitter() // Use to construct a sync bus for simple usage;
 
 class SyncEvent<T> {
   ev: string
@@ -22,6 +22,10 @@ class SyncEvent<T> {
       syncBus.removeListener(this.ev, fn)
       this.listeners.splice(this.listeners.indexOf(fn), 1)
     }
+  }
+
+  removeAllListener() {
+    this.listeners.forEach((fn) => syncBus.removeListener(this.ev, fn))
   }
 }
 

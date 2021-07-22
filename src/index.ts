@@ -1,7 +1,7 @@
 /* eslint no-fallthrough: 0 */
 import { BehaviorSubject, Subject, ReplaySubject, AsyncSubject } from 'rxjs'
 import { exist, noExist } from './decorator'
-import SyncEvent, { syncBus } from './sync'
+import SyncEvent from './sync'
 import { backupOrigin, camelize, restoreOrigin } from './util'
 
 type RxSubject<T> =
@@ -193,9 +193,7 @@ class RxBus<P extends string> {
       )
     }
     if ((subject as SyncEvent<any>).listeners) {
-      ;(subject as SyncEvent<any>).listeners.forEach((fn) =>
-        syncBus.removeListener((subject as SyncEvent<any>).ev, fn)
-      )
+      ;(subject as SyncEvent<any>).removeAllListener()
     }
   }
 
@@ -226,8 +224,9 @@ class RxBus<P extends string> {
     ].forEach((rxSubject) => {
       Object.keys(rxSubject).forEach((ev) => {
         this.removeSubscriptions(ev as P)
-        if ((rxSubject[ev] as Subject<any>).complete)
-          (rxSubject[ev] as Subject<any>).complete()
+        if ((rxSubject[ev] as any).complete) {
+          ;(rxSubject[ev] as Subject<any>).complete()
+        }
       })
     })
   }
