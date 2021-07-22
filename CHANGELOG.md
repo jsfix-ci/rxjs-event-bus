@@ -1,6 +1,13 @@
-# Change Log
+# Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [0.1.3](https://github.com/21epub/rxjs-event-bus/compare/v0.1.2...v0.1.3) (2021-07-22)
+
+
+### Features
+
+* add sync events support ([67bd2a5](https://github.com/21epub/rxjs-event-bus/commit/67bd2a575a67b7e71dd47758e3a288ea9070dd30))
 
 ## [0.1.2](https://github.com/21epub/rxjs-event-bus/compare/v0.1.1...v0.1.2) (2021-01-29)
 
