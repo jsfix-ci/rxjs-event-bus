@@ -24,7 +24,7 @@ describe('Bus Basic function', () => {
     rxBus.subject('event1').subscribe(() => {
       eventCount++
     })
-    rxBus.subject('event1').next()
+    rxBus.subject('event1').next(undefined)
     expect(eventCount).toBe(1)
   })
 
